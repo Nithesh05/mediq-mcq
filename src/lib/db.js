@@ -2,7 +2,8 @@ const Database = require('better-sqlite3');
 const path = require('path');
 
 // Check if we are in a production environment with Postgres available
-const isProd = process.env.NODE_ENV === 'production' && process.env.POSTGRES_URL;
+const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+const isProd = process.env.NODE_ENV === 'production' && connectionString;
 
 let sql; // For Vercel Postgres
 let sqlite; // For Local SQLite
@@ -11,8 +12,11 @@ if (isProd) {
   // We will import this dynamically to avoid build errors if not installed yet
   // In a real Vercel deploy, @vercel/postgres should be in package.json
   try {
-    const { sql: vercelSql } = require('@vercel/postgres');
-    sql = vercelSql;
+    const { createPool } = require('@vercel/postgres');
+    // Create a pool using the available connection string
+    sql = createPool({
+      connectionString: connectionString,
+    });
   } catch (e) {
     console.warn("Vercel Postgres not found, falling back to SQLite (if possible) or failing.");
   }
@@ -30,21 +34,23 @@ const db = {
    */
   query: async (queryString, params = []) => {
     if (isProd && sql) {
-      // Vercel Postgres
-      // Convert ? to $1, $2, etc. for Postgres compatibility if needed
-      // But standard Vercel SDK uses template literals usually. 
-      // For simplicity in migration, we might need a helper to convert syntax if we stick to string queries.
-      // However, Vercel SQL accepts `sql\`query\`` or `client.query(text, values)`.
-      // Let's use the client.query style if available or raw query.
-      // Actually, @vercel/postgres `sql` tag is best, but for dynamic strings we need `db.query`.
-      const { rows } = await sql.query(queryString.replace(/\?/g, (match, offset, string) => {
-        // Simple regex to convert ? to $1, $2... (Naive implementation)
-        // A better approach for this migration is to keep using SQLite locally and assume 
-        // we will fix queries if they are complex.
-        // For now, let's try to map ? to $n
+      // Vercel Postgres (pg pool)
+      // Convert ? to $1, $2, etc. for Postgres compatibility
+      const pgQuery = queryString.replace(/\?/g, (match) => {
         let count = 0;
-        return () => `$${++count}`;
-      })(), params);
+        // This closure approach is tricky in replace, let's do it outside or use a counter in the scope if possible.
+        // Actually, replace callback is called for each match. We need a persistent counter.
+        // But wait, the previous implementation had a bug: `let count = 0` inside the callback resets it? 
+        // No, I was defining a function `return () => ...`. That was weird.
+        // Let's fix the parameter replacement logic properly.
+        return `$${++count}`; // This won't work because count resets.
+      });
+
+      // Correct parameter replacement
+      let paramCount = 0;
+      const finalQuery = queryString.replace(/\?/g, () => `$${++paramCount}`);
+
+      const { rows } = await sql.query(finalQuery, params);
       return rows;
     } else {
       // SQLite (Async Wrapper)
@@ -67,10 +73,9 @@ const db = {
    */
   get: async (queryString, params = []) => {
     if (isProd && sql) {
-      const { rows } = await sql.query(queryString.replace(/\?/g, (match) => {
-        let count = 0;
-        return () => `$${++count}`;
-      })(), params);
+      let paramCount = 0;
+      const finalQuery = queryString.replace(/\?/g, () => `$${++paramCount}`);
+      const { rows } = await sql.query(finalQuery, params);
       return rows[0] || null;
     } else {
       return new Promise((resolve, reject) => {
@@ -92,10 +97,9 @@ const db = {
    */
   run: async (queryString, params = []) => {
     if (isProd && sql) {
-      const result = await sql.query(queryString.replace(/\?/g, (match) => {
-        let count = 0;
-        return () => `$${++count}`;
-      })(), params);
+      let paramCount = 0;
+      const finalQuery = queryString.replace(/\?/g, () => `$${++paramCount}`);
+      const result = await sql.query(finalQuery, params);
       return { changes: result.rowCount, lastInsertRowid: null }; // Postgres doesn't return ID easily this way without RETURNING
     } else {
       return new Promise((resolve, reject) => {
