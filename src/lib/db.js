@@ -36,27 +36,27 @@ const db = {
    * @param {any[]} params 
    */
   query: async (queryString, params = []) => {
-    if (isProd && sql) {
+    if (isProd) {
+      if (!sql) {
+        throw new Error("Database connection failed: Vercel Postgres pool is not initialized.");
+      }
       // Vercel Postgres (pg pool)
       // Convert ? to $1, $2, etc. for Postgres compatibility
-      const pgQuery = queryString.replace(/\?/g, (match) => {
-        let count = 0;
-        // This closure approach is tricky in replace, let's do it outside or use a counter in the scope if possible.
-        // Actually, replace callback is called for each match. We need a persistent counter.
-        // But wait, the previous implementation had a bug: `let count = 0` inside the callback resets it? 
-        // No, I was defining a function `return () => ...`. That was weird.
-        // Let's fix the parameter replacement logic properly.
-        return `$${++count}`; // This won't work because count resets.
-      });
-
-      // Correct parameter replacement
       let paramCount = 0;
       const finalQuery = queryString.replace(/\?/g, () => `$${++paramCount}`);
 
-      const { rows } = await sql.query(finalQuery, params);
-      return rows;
+      try {
+        const { rows } = await sql.query(finalQuery, params);
+        return rows;
+      } catch (err) {
+        console.error("Database Query Error:", err);
+        throw err;
+      }
     } else {
       // SQLite (Async Wrapper)
+      if (!sqlite) {
+        throw new Error("Database connection failed: SQLite is not initialized.");
+      }
       return new Promise((resolve, reject) => {
         try {
           const stmt = sqlite.prepare(queryString);
@@ -75,12 +75,23 @@ const db = {
    * @param {any[]} params 
    */
   get: async (queryString, params = []) => {
-    if (isProd && sql) {
+    if (isProd) {
+      if (!sql) {
+        throw new Error("Database connection failed: Vercel Postgres pool is not initialized.");
+      }
       let paramCount = 0;
       const finalQuery = queryString.replace(/\?/g, () => `$${++paramCount}`);
-      const { rows } = await sql.query(finalQuery, params);
-      return rows[0] || null;
+      try {
+        const { rows } = await sql.query(finalQuery, params);
+        return rows[0] || null;
+      } catch (err) {
+        console.error("Database Get Error:", err);
+        throw err;
+      }
     } else {
+      if (!sqlite) {
+        throw new Error("Database connection failed: SQLite is not initialized.");
+      }
       return new Promise((resolve, reject) => {
         try {
           const stmt = sqlite.prepare(queryString);
@@ -99,12 +110,23 @@ const db = {
    * @param {any[]} params 
    */
   run: async (queryString, params = []) => {
-    if (isProd && sql) {
+    if (isProd) {
+      if (!sql) {
+        throw new Error("Database connection failed: Vercel Postgres pool is not initialized.");
+      }
       let paramCount = 0;
       const finalQuery = queryString.replace(/\?/g, () => `$${++paramCount}`);
-      const result = await sql.query(finalQuery, params);
-      return { changes: result.rowCount, lastInsertRowid: null }; // Postgres doesn't return ID easily this way without RETURNING
+      try {
+        const result = await sql.query(finalQuery, params);
+        return { changes: result.rowCount, lastInsertRowid: null };
+      } catch (err) {
+        console.error("Database Run Error:", err);
+        throw err;
+      }
     } else {
+      if (!sqlite) {
+        throw new Error("Database connection failed: SQLite is not initialized.");
+      }
       return new Promise((resolve, reject) => {
         try {
           const stmt = sqlite.prepare(queryString);
