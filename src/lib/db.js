@@ -7,6 +7,7 @@ const isProd = process.env.NODE_ENV === 'production' && connectionString;
 
 let sql; // For Vercel Postgres
 let sqlite; // For Local SQLite
+let initError; // Capture initialization error
 
 if (isProd) {
   // We will import this dynamically to avoid build errors if not installed yet
@@ -21,7 +22,8 @@ if (isProd) {
       }
     });
   } catch (e) {
-    console.warn("Vercel Postgres not found, falling back to SQLite (if possible) or failing.");
+    console.error("Failed to initialize Vercel Postgres:", e);
+    initError = e;
   }
 } else {
   const dbPath = path.join(process.cwd(), 'mediq.db');
@@ -38,7 +40,7 @@ const db = {
   query: async (queryString, params = []) => {
     if (isProd) {
       if (!sql) {
-        throw new Error("Database connection failed: Vercel Postgres pool is not initialized.");
+        throw new Error(`Database connection failed: Vercel Postgres pool is not initialized. Init Error: ${initError ? initError.message : 'Unknown'}`);
       }
       // Vercel Postgres (pg pool)
       // Convert ? to $1, $2, etc. for Postgres compatibility
@@ -77,7 +79,7 @@ const db = {
   get: async (queryString, params = []) => {
     if (isProd) {
       if (!sql) {
-        throw new Error("Database connection failed: Vercel Postgres pool is not initialized.");
+        throw new Error(`Database connection failed: Vercel Postgres pool is not initialized. Init Error: ${initError ? initError.message : 'Unknown'}`);
       }
       let paramCount = 0;
       const finalQuery = queryString.replace(/\?/g, () => `$${++paramCount}`);
@@ -112,7 +114,7 @@ const db = {
   run: async (queryString, params = []) => {
     if (isProd) {
       if (!sql) {
-        throw new Error("Database connection failed: Vercel Postgres pool is not initialized.");
+        throw new Error(`Database connection failed: Vercel Postgres pool is not initialized. Init Error: ${initError ? initError.message : 'Unknown'}`);
       }
       let paramCount = 0;
       const finalQuery = queryString.replace(/\?/g, () => `$${++paramCount}`);
