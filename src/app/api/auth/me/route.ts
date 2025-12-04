@@ -1,14 +1,9 @@
-// e.g. src/app/api/auth/me/route.ts
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createClient } from "@vercel/postgres";
+import { db } from "@/lib/db";
 
 export async function GET() {
-  const client = createClient();
-
   try {
-    await client.connect();
-
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("session");
 
@@ -30,26 +25,20 @@ export async function GET() {
     }
 
     // Fetch user
-    const userRes = await client.sql`
-      SELECT id, username, xp, role, email, security_question
-      FROM users
-      WHERE id = ${userId}
-      LIMIT 1
-    `;
-    const user = userRes.rows?.[0];
+    const user: any = await db.get(
+      "SELECT id, username, xp, role, email, security_question FROM users WHERE id = ?",
+      [userId]
+    );
 
     if (!user) {
       return NextResponse.json({ user: null }, { status: 200 });
     }
 
     // Fetch streak
-    const streakRes = await client.sql`
-      SELECT current_streak
-      FROM streaks
-      WHERE user_id = ${userId}
-      LIMIT 1
-    `;
-    const streak = streakRes.rows?.[0];
+    const streak: any = await db.get(
+      "SELECT current_streak FROM streaks WHERE user_id = ?",
+      [userId]
+    );
 
     const responseUser = {
       ...user,
@@ -61,7 +50,5 @@ export async function GET() {
   } catch (error) {
     console.error("Me Error:", error);
     return NextResponse.json({ user: null }, { status: 200 });
-  } finally {
-    try { await client.end(); } catch (e) { /* ignore cleanup errors */ }
   }
 }

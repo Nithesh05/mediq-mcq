@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { createClient } from "@vercel/postgres";
+import { db } from "@/lib/db";
 
 export async function POST(request: Request) {
-  const client = createClient();
-
   try {
-    await client.connect();
-
     const { action, username, securityAnswer, newPassword } = await request.json();
 
     if (!action || !username) {
@@ -15,13 +11,10 @@ export async function POST(request: Request) {
     }
 
     // Fetch user by username
-    const res = await client.sql`
-      SELECT id, security_question, security_answer
-      FROM users
-      WHERE username = ${username}
-      LIMIT 1
-    `;
-    const user = res.rows?.[0];
+    const user: any = await db.get(
+      "SELECT id, security_question, security_answer FROM users WHERE username = ?",
+      [username]
+    );
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -54,11 +47,10 @@ export async function POST(request: Request) {
 
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      await client.sql`
-        UPDATE users
-        SET password_hash = ${hashedPassword}
-        WHERE id = ${user.id}
-      `;
+      await db.run(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        [hashedPassword, user.id]
+      );
 
       return NextResponse.json({ message: "Password reset successfully" });
     }
@@ -67,7 +59,5 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Reset Password Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  } finally {
-    try { await client.end(); } catch (e) { /* ignore */ }
   }
 }

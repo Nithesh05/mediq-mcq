@@ -1,13 +1,9 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { createClient } from "@vercel/postgres";
+import { db } from '@/lib/db';
 
 export async function POST(request: Request) {
-    const client = createClient();
-
     try {
-        await client.connect();
-
         const { username, email, password, securityQuestion, securityAnswer } = await request.json();
 
         if (!username || !email || !password || !securityQuestion || !securityAnswer) {
@@ -21,11 +17,9 @@ export async function POST(request: Request) {
         }
 
         // Check if username exists
-        const existingUser = await client.sql`
-            SELECT * FROM users WHERE username = ${username} LIMIT 1
-        `;
+        const existingUser = await db.get('SELECT id FROM users WHERE username = ?', [username]);
 
-        if (existingUser.rows.length > 0) {
+        if (existingUser) {
             return NextResponse.json({ error: 'Username already taken' }, { status: 409 });
         }
 
@@ -33,29 +27,32 @@ export async function POST(request: Request) {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Insert user
-        const newUser = await client.sql`
-            INSERT INTO users (username, email, password_hash, security_question, security_answer, role)
-            VALUES (${username}, ${email}, ${hashedPassword}, ${securityQuestion}, ${securityAnswer.toLowerCase()}, 'user')
-            RETURNING id
-        `;
+        // Note: db.run returns { lastInsertRowid } for SQLite, but for Postgres via adapter we might need to handle it differently.
+        // The adapter implementation for Postgres returns { changes, lastInsertRowid: null }.
+        // So we should use RETURNING id for Postgres compatibility if we want the ID.
+        // However, our adapter's 'run' method might not return the row even with RETURNING.
+        // Let's use db.get with RETURNING for Postgres, but SQLite 'run' works differently.
+        // To be safe and cross-compatible: Insert then Select.
 
-        const userId = newUser.rows?.[0]?.id;
+        await db.run(
+            'INSERT INTO users (username, email, password_hash, security_question, security_answer, role) VALUES (?, ?, ?, ?, ?, ?)',
+            [username, email, hashedPassword, securityQuestion, securityAnswer.toLowerCase(), 'user']
+        );
 
-        if (!userId) {
+        // Fetch the new user to get the ID (safe for both)
+        const newUser: any = await db.get('SELECT id FROM users WHERE username = ?', [username]);
+
+        if (!newUser) {
             throw new Error("Failed to create user");
         }
 
         // Initialize streak
-        await client.sql`
-            INSERT INTO streaks (user_id) VALUES (${userId})
-        `;
+        await db.run('INSERT INTO streaks (user_id) VALUES (?)', [newUser.id]);
 
         return NextResponse.json({ message: 'User registered successfully' }, { status: 201 });
-        
+
     } catch (error) {
         console.error('Registration error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-    } finally {
-        try { await client.end(); } catch {}
     }
 }
