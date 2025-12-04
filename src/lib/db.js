@@ -5,29 +5,61 @@ const path = require('path');
 const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
 const isProd = process.env.NODE_ENV === 'production' && connectionString;
 
-let sql; // For Vercel Postgres
+let sqlInstance = null; // Singleton for Vercel Postgres (Pool or Client)
 let sqlite; // For Local SQLite
-let initError; // Capture initialization error
 
-if (isProd) {
-  // We will import this dynamically to avoid build errors if not installed yet
-  // In a real Vercel deploy, @vercel/postgres should be in package.json
-  try {
-    const { createPool } = require('@vercel/postgres');
-    // Create a pool using the available connection string
-    sql = createPool({
-      connectionString: connectionString,
-      ssl: {
-        rejectUnauthorized: false // Required for some external Postgres providers (Supabase, Neon, etc.)
-      }
-    });
-  } catch (e) {
-    console.error("Failed to initialize Vercel Postgres:", e);
-    initError = e;
-  }
-} else {
+if (!isProd) {
   const dbPath = path.join(process.cwd(), 'mediq.db');
   sqlite = new Database(dbPath);
+}
+
+// Helper to get the Postgres connection (Pool or Client)
+async function getSql() {
+  if (sqlInstance) return sqlInstance;
+
+  if (isProd) {
+    const { createPool, createClient } = require('@vercel/postgres');
+
+    try {
+      // First, try to create a Pool (preferred for serverless)
+      // This throws immediately if the connection string is a "Direct Connection" string
+      const pool = createPool({
+        connectionString: connectionString,
+        ssl: { rejectUnauthorized: false }
+      });
+
+      // If we got here, the pool was created successfully (or at least didn't throw on config)
+      sqlInstance = pool;
+      return sqlInstance;
+
+    } catch (error) {
+      // Check if the error is about using a direct connection string with a pool
+      if (error.message.includes('invalid_connection_string') ||
+        error.message.includes('direct connection') ||
+        error.code === 'VercelPostgresError') {
+
+        console.warn("Pool creation failed (likely direct connection string). Falling back to Client...");
+
+        try {
+          const client = createClient({
+            connectionString: connectionString,
+            ssl: { rejectUnauthorized: false }
+          });
+          await client.connect(); // Client requires explicit connection
+          sqlInstance = client;
+          return sqlInstance;
+        } catch (clientError) {
+          console.error("Failed to connect with Client fallback:", clientError);
+          throw clientError;
+        }
+      } else {
+        // Some other error occurred
+        console.error("Failed to initialize Vercel Postgres Pool:", error);
+        throw error;
+      }
+    }
+  }
+  return null;
 }
 
 // Unified Database Adapter
@@ -39,10 +71,10 @@ const db = {
    */
   query: async (queryString, params = []) => {
     if (isProd) {
-      if (!sql) {
-        throw new Error(`Database connection failed: Vercel Postgres pool is not initialized. Init Error: ${initError ? initError.message : 'Unknown'}`);
-      }
-      // Vercel Postgres (pg pool)
+      const sql = await getSql();
+      if (!sql) throw new Error("Database connection failed: Vercel Postgres not initialized.");
+
+      // Vercel Postgres (pg pool/client)
       // Convert ? to $1, $2, etc. for Postgres compatibility
       let paramCount = 0;
       const finalQuery = queryString.replace(/\?/g, () => `$${++paramCount}`);
@@ -56,9 +88,7 @@ const db = {
       }
     } else {
       // SQLite (Async Wrapper)
-      if (!sqlite) {
-        throw new Error("Database connection failed: SQLite is not initialized.");
-      }
+      if (!sqlite) throw new Error("Database connection failed: SQLite is not initialized.");
       return new Promise((resolve, reject) => {
         try {
           const stmt = sqlite.prepare(queryString);
@@ -78,9 +108,9 @@ const db = {
    */
   get: async (queryString, params = []) => {
     if (isProd) {
-      if (!sql) {
-        throw new Error(`Database connection failed: Vercel Postgres pool is not initialized. Init Error: ${initError ? initError.message : 'Unknown'}`);
-      }
+      const sql = await getSql();
+      if (!sql) throw new Error("Database connection failed: Vercel Postgres not initialized.");
+
       let paramCount = 0;
       const finalQuery = queryString.replace(/\?/g, () => `$${++paramCount}`);
       try {
@@ -91,9 +121,7 @@ const db = {
         throw err;
       }
     } else {
-      if (!sqlite) {
-        throw new Error("Database connection failed: SQLite is not initialized.");
-      }
+      if (!sqlite) throw new Error("Database connection failed: SQLite is not initialized.");
       return new Promise((resolve, reject) => {
         try {
           const stmt = sqlite.prepare(queryString);
@@ -113,9 +141,9 @@ const db = {
    */
   run: async (queryString, params = []) => {
     if (isProd) {
-      if (!sql) {
-        throw new Error(`Database connection failed: Vercel Postgres pool is not initialized. Init Error: ${initError ? initError.message : 'Unknown'}`);
-      }
+      const sql = await getSql();
+      if (!sql) throw new Error("Database connection failed: Vercel Postgres not initialized.");
+
       let paramCount = 0;
       const finalQuery = queryString.replace(/\?/g, () => `$${++paramCount}`);
       try {
@@ -126,9 +154,7 @@ const db = {
         throw err;
       }
     } else {
-      if (!sqlite) {
-        throw new Error("Database connection failed: SQLite is not initialized.");
-      }
+      if (!sqlite) throw new Error("Database connection failed: SQLite is not initialized.");
       return new Promise((resolve, reject) => {
         try {
           const stmt = sqlite.prepare(queryString);
@@ -143,8 +169,7 @@ const db = {
 };
 
 function initDb() {
-  if (isProd) return; // Vercel Postgres tables should be created via SQL shell or migration script, not app startup usually.
-  // But for now, we skip auto-init in prod to avoid errors.
+  if (isProd) return; // Vercel Postgres tables should be created via SQL shell or migration script
 
   // Users Table
   sqlite.exec(`
