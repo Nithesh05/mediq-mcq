@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
 export async function GET() {
-    try {
-        // Users Table
-        await db.query(`
+  try {
+    // Users Table
+    await db.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
@@ -19,8 +19,8 @@ export async function GET() {
       )
     `);
 
-        // Streaks Table
-        await db.query(`
+    // Streaks Table
+    await db.query(`
       CREATE TABLE IF NOT EXISTS streaks (
         user_id INTEGER PRIMARY KEY,
         current_streak INTEGER DEFAULT 0,
@@ -29,8 +29,8 @@ export async function GET() {
       )
     `);
 
-        // Activity Log
-        await db.query(`
+    // Activity Log
+    await db.query(`
       CREATE TABLE IF NOT EXISTS activity_log (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
@@ -41,8 +41,8 @@ export async function GET() {
       )
     `);
 
-        // Notifications Table
-        await db.query(`
+    // Notifications Table
+    await db.query(`
       CREATE TABLE IF NOT EXISTS notifications (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
@@ -54,8 +54,8 @@ export async function GET() {
       )
     `);
 
-        // Friends Table
-        await db.query(`
+    // Friends Table
+    await db.query(`
       CREATE TABLE IF NOT EXISTS friends (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
@@ -65,8 +65,8 @@ export async function GET() {
       )
     `);
 
-        // Groups Table
-        await db.query(`
+    // Groups Table
+    await db.query(`
       CREATE TABLE IF NOT EXISTS groups (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
@@ -78,8 +78,8 @@ export async function GET() {
       )
     `);
 
-        // Group Members Table
-        await db.query(`
+    // Group Members Table
+    await db.query(`
       CREATE TABLE IF NOT EXISTS group_members (
         id SERIAL PRIMARY KEY,
         group_id INTEGER NOT NULL,
@@ -89,9 +89,17 @@ export async function GET() {
       )
     `);
 
-        return NextResponse.json({ message: "Database initialized successfully! You can now use the app." });
-    } catch (error) {
-        console.error("Setup Error:", error);
-        return NextResponse.json({ error: "Failed to setup DB", details: error }, { status: 500 });
+    return NextResponse.json({ message: "Database initialized successfully! You can now use the app." });
+  } catch (error: any) {
+    console.error("Setup Error:", error);
+    let errorMessage = "Failed to setup DB";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    } else if (error && typeof error === "object") {
+      errorMessage = JSON.stringify(error);
     }
+    return NextResponse.json({ error: errorMessage, details: error }, { status: 500 });
+  }
 }
