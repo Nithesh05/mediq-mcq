@@ -62,8 +62,6 @@ function AIMCQContent() {
     const [showResult, setShowResult] = useState(false);
     const [timeLeft, setTimeLeft] = useState(300); // 5 minutes for AI quiz
 
-    // ... (rest of the component state)
-
     // Show loading while checking auth
     if (loading) {
         return (
@@ -86,9 +84,83 @@ function AIMCQContent() {
             setDifficulty("Medium");
             handleGenerate(randomTopic);
         }
-    }, [isDaily, user]); // Added user dependency
+    }, [isDaily, user]);
 
-    // ... (rest of the functions: handleGenerate, Timer Logic, handleOptionClick, handleNext)
+    const handleGenerate = async (selectedTopic = topic) => {
+        if (!selectedTopic.trim()) return;
+
+        setIsGenerating(true);
+        setQuestions([]); // Clear previous questions
+
+        try {
+            const response = await fetch("/api/gemini", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ topic: selectedTopic, difficulty }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to generate questions");
+            }
+
+            setQuestions(data.questions);
+            setQuizReady(true);
+            setTimeLeft(300);
+            setCurrentIndex(0);
+            setScore(0);
+            setShowResult(false);
+            setIsAnswered(false);
+            setSelectedOption(null);
+        } catch (error) {
+            console.error("Generation Error:", error);
+            alert("Error: " + (error instanceof Error ? error.message : "Something went wrong"));
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    // Timer Logic
+    useEffect(() => {
+        if (!quizReady || showResult) return;
+        const timer = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    setShowResult(true);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [quizReady, showResult]);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const handleOptionClick = (index: number) => {
+        if (isAnswered) return;
+        setSelectedOption(index);
+        setIsAnswered(true);
+        if (index === questions[currentIndex].correctAnswer) {
+            setScore((prev) => prev + 1);
+        }
+    };
+
+    const handleNext = () => {
+        if (currentIndex < questions.length - 1) {
+            setCurrentIndex((prev) => prev + 1);
+            setSelectedOption(null);
+            setIsAnswered(false);
+        } else {
+            setShowResult(true);
+        }
+    };
 
     const { setStreak, setXP, setLevel } = useStreak();
     const [showLevelUp, setShowLevelUp] = useState(false);
@@ -210,7 +282,6 @@ function AIMCQContent() {
     }
 
     if (quizReady) {
-        // ... (existing quiz rendering code)
         const currentQuestion = questions[currentIndex];
         return (
             <div className="quiz-container">
@@ -480,5 +551,3 @@ function AIMCQContent() {
         </PageTransition>
     );
 }
-
-
