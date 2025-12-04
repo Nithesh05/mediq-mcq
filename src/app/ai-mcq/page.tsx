@@ -481,10 +481,4 @@ function AIMCQContent() {
     );
 }
 
-export default function AIMCQGenerator() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <AIMCQContent />
-        </Suspense>
-    );
-}
+
