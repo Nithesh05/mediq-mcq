@@ -16,6 +16,9 @@ if (isProd) {
     // Create a pool using the available connection string
     sql = createPool({
       connectionString: connectionString,
+      ssl: {
+        rejectUnauthorized: false // Required for some external Postgres providers (Supabase, Neon, etc.)
+      }
     });
   } catch (e) {
     console.warn("Vercel Postgres not found, falling back to SQLite (if possible) or failing.");

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Brain, Zap, ArrowRight, CheckCircle, XCircle, RefreshCw, Timer, AlertCircle, Calendar } from "lucide-react";
 import { useStreak } from "@/context/StreakContext";
+import { useUser } from "@/hooks/useUser";
 import PageTransition from "@/components/PageTransition";
 
 // Mock Question Type
@@ -25,10 +26,27 @@ const DAILY_TOPICS = [
     "Glaucoma", "Otitis Media", "Rheumatoid Arthritis", "Osteoporosis", "Gout"
 ];
 
+export default function AIMCQGenerator() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <AIMCQContent />
+        </Suspense>
+    );
+}
+
 function AIMCQContent() {
     const searchParams = useSearchParams();
     const mode = searchParams.get("mode");
     const isDaily = mode === "daily";
+    const { user, loading } = useUser(); // Get user and loading state
+    const router = useRouter(); // Import useRouter
+
+    // Redirect if not logged in
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push("/login");
+        }
+    }, [user, loading, router]);
 
     const [topic, setTopic] = useState("");
     const [difficulty, setDifficulty] = useState("Medium");
@@ -44,6 +62,22 @@ function AIMCQContent() {
     const [showResult, setShowResult] = useState(false);
     const [timeLeft, setTimeLeft] = useState(300); // 5 minutes for AI quiz
 
+    // ... (rest of the component state)
+
+    // Show loading while checking auth
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+            </div>
+        );
+    }
+
+    // If no user (and not loading), don't render content (will redirect)
+    if (!user) {
+        return null;
+    }
+
     // Auto-start for Daily Mode
     useEffect(() => {
         if (isDaily && !quizReady && !isGenerating && !topic) {
@@ -52,89 +86,16 @@ function AIMCQContent() {
             setDifficulty("Medium");
             handleGenerate(randomTopic);
         }
-    }, [isDaily]);
+    }, [isDaily, user]); // Added user dependency
 
-    const handleGenerate = async (selectedTopic = topic) => {
-        if (!selectedTopic.trim()) return;
-
-        setIsGenerating(true);
-        setQuestions([]); // Clear previous questions
-
-        try {
-            const response = await fetch("/api/gemini", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ topic: selectedTopic, difficulty }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || "Failed to generate questions");
-            }
-
-            setQuestions(data.questions);
-            setQuizReady(true);
-            setTimeLeft(300);
-            setCurrentIndex(0);
-            setScore(0);
-            setShowResult(false);
-            setIsAnswered(false);
-            setSelectedOption(null);
-        } catch (error) {
-            console.error("Generation Error:", error);
-            alert("Error: " + (error instanceof Error ? error.message : "Something went wrong"));
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
-    // Timer Logic
-    useEffect(() => {
-        if (!quizReady || showResult) return;
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    setShowResult(true);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [quizReady, showResult]);
-
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    const handleOptionClick = (index: number) => {
-        if (isAnswered) return;
-        setSelectedOption(index);
-        setIsAnswered(true);
-        if (index === questions[currentIndex].correctAnswer) {
-            setScore((prev) => prev + 1);
-        }
-    };
-
-    const handleNext = () => {
-        if (currentIndex < questions.length - 1) {
-            setCurrentIndex((prev) => prev + 1);
-            setSelectedOption(null);
-            setIsAnswered(false);
-        } else {
-            setShowResult(true);
-        }
-    };
+    // ... (rest of the functions: handleGenerate, Timer Logic, handleOptionClick, handleNext)
 
     const { setStreak, setXP, setLevel } = useStreak();
     const [showLevelUp, setShowLevelUp] = useState(false);
     const [newLevel, setNewLevel] = useState(0);
 
     const updateStats = async (xpEarned: number) => {
+        // User is guaranteed to be logged in here due to the check above
         try {
             // Update Streak
             const streakRes = await fetch("/api/streak/update", { method: "POST" });
@@ -197,7 +158,6 @@ function AIMCQContent() {
 
     if (showResult) {
         const xpEarned = score * (isDaily ? 20 : 15);
-
         const percentage = Math.round((score / questions.length) * 100);
         return (
             <div className="quiz-result-container">
@@ -229,8 +189,13 @@ function AIMCQContent() {
                             onClick={() => {
                                 setQuizReady(false);
                                 if (isDaily) {
-                                    // Redirect or reset mode if needed, for now just reset
                                     window.location.href = "/practice";
+                                } else {
+                                    // Reset for new topic
+                                    setTopic("");
+                                    setQuestions([]);
+                                    setScore(0);
+                                    setShowResult(false);
                                 }
                             }}
                             className="btn btn-secondary"
@@ -245,6 +210,7 @@ function AIMCQContent() {
     }
 
     if (quizReady) {
+        // ... (existing quiz rendering code)
         const currentQuestion = questions[currentIndex];
         return (
             <div className="quiz-container">

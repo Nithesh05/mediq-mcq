@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, MessageSquare, Send, User, Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useUser } from "@/hooks/useUser";
 
 interface FeedbackItem {
     id: number;
@@ -13,6 +14,7 @@ interface FeedbackItem {
 }
 
 export default function FeedbackModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+    const { user } = useUser();
     const [feedbackList, setFeedbackList] = useState<FeedbackItem[]>([]);
     const [newFeedback, setNewFeedback] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -113,36 +115,48 @@ export default function FeedbackModal({ isOpen, onClose }: { isOpen: boolean; on
                         </div>
 
                         {/* Input Area */}
-                        <form onSubmit={handleSubmit} className="p-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
-                            <div className="flex gap-1 mb-2 justify-center">
-                                {[1, 2, 3, 4, 5].map((star) => (
+                        {user ? (
+                            <form onSubmit={handleSubmit} className="p-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                <div className="flex gap-1 mb-2 justify-center">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            type="button"
+                                            onClick={() => setRating(star)}
+                                            className={`p-1 transition-colors ${rating >= star ? "text-yellow-400" : "text-slate-300 dark:text-slate-600"}`}
+                                        >
+                                            <Star size={20} className={rating >= star ? "fill-current" : ""} />
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={newFeedback}
+                                        onChange={(e) => setNewFeedback(e.target.value)}
+                                        placeholder="Share your thoughts..."
+                                        className="w-full pl-4 pr-12 py-3 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] transition-all text-[var(--foreground)] placeholder:text-slate-400"
+                                    />
                                     <button
-                                        key={star}
-                                        type="button"
-                                        onClick={() => setRating(star)}
-                                        className={`p-1 transition-colors ${rating >= star ? "text-yellow-400" : "text-slate-300 dark:text-slate-600"}`}
+                                        type="submit"
+                                        disabled={isSubmitting || !newFeedback.trim()}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
-                                        <Star size={20} className={rating >= star ? "fill-current" : ""} />
+                                        <Send size={16} />
                                     </button>
-                                ))}
-                            </div>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={newFeedback}
-                                    onChange={(e) => setNewFeedback(e.target.value)}
-                                    placeholder="Share your thoughts..."
-                                    className="w-full pl-4 pr-12 py-3 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] transition-all text-[var(--foreground)] placeholder:text-slate-400"
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting || !newFeedback.trim()}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                </div>
+                            </form>
+                        ) : (
+                            <div className="p-6 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-center">
+                                <p className="text-slate-600 dark:text-slate-400 mb-3">Please login to share your feedback.</p>
+                                <a
+                                    href="/login"
+                                    className="inline-block px-6 py-2 bg-[var(--primary)] text-white rounded-lg font-medium hover:bg-[var(--primary-hover)] transition-colors"
                                 >
-                                    <Send size={16} />
-                                </button>
+                                    Log In
+                                </a>
                             </div>
-                        </form>
+                        )}
                     </motion.div>
                 </div>
             )}
