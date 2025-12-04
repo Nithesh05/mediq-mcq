@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Models below mirror your SQL tables:
+// - users, streaks, friends, activity_log, feedback
+// - groups, group_members
+// - achievements, user_achievements
+// - notifications
+
+model User {
+  id                Int               @id @default(autoincrement())
+  username          String            @unique
+  password_hash     String
+  xp                Int               @default(0)
+  security_question String?
+  security_answer   String?
+  role              String            @default("user")
+  created_at        DateTime          @default(now())
+  email             String?
+  level             Int               @default(1)
+
+  // relations
+  streak             Streak?           
+  friends            Friend[]          @relation("UserFriends")
+  friendOf           Friend[]          @relation("FriendOf")
+  activity_logs      ActivityLog[]
+  feedbacks          Feedback[]
+  hostedGroups       Group[]           @relation("HostedGroups")
+  group_members      GroupMember[]
+  user_achievements  UserAchievement[]
+  notifications      Notification[]
+}
+
+model Streak {
+  user_id           Int    @id
+  current_streak    Int    @default(0)
+  last_activity_date String?
+  longest_streak    Int    @default(0)
+
+  user              User   @relation(fields: [user_id], references: [id])
+}
+
+model Friend {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  friend_id  Int
+  created_at DateTime @default(now())
+
+  user       User @relation("UserFriends", fields: [user_id], references: [id])
+  friend     User @relation("FriendOf",    fields: [friend_id], references: [id])
+
+  @@unique([user_id, friend_id])
+}
+
+model ActivityLog {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  activity_type String
+  timestamp    DateTime @default(now())
+  details      String?
+  score        Int?
+
+  user         User @relation(fields: [user_id], references: [id])
+}
+
+model Feedback {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  content    String
+  rating     Int      @default(5)
+  created_at DateTime @default(now())
+
+  user       User @relation(fields: [user_id], references: [id])
+}
+
+model Group {
+  id         Int      @id @default(autoincrement())
+  name       String
+  topic      String?
+  is_private Boolean  @default(false)
+  host_id    Int
+  invite_code String? @unique
+  created_at DateTime @default(now())
+
+  host        User @relation("HostedGroups", fields: [host_id], references: [id])
+  members     GroupMember[]
+}
+
+model GroupMember {
+  id        Int @id @default(autoincrement())
+  group_id  Int
+  user_id   Int
+  joined_at DateTime @default(now())
+
+  group     Group @relation(fields: [group_id], references: [id])
+  user      User  @relation(fields: [user_id], references: [id])
+
+  @@unique([group_id, user_id])
+}
+
+model Achievement {
+  id              String  @id
+  title           String
+  description     String
+  icon            String
+  condition_type  String
+  condition_value Int
+
+  user_achievements UserAchievement[]
+}
+
+model UserAchievement {
+  id             Int      @id @default(autoincrement())
+  user_id        Int
+  achievement_id String
+  unlocked_at    DateTime @default(now())
+
+  user           User       @relation(fields: [user_id], references: [id])
+  achievement    Achievement @relation(fields: [achievement_id], references: [id])
+
+  @@unique([user_id, achievement_id])
+}
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  title      String
+  message    String
+  type       String   @default("info")
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user       User @relation(fields: [user_id], references: [id])
+}
