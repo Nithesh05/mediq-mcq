@@ -52,13 +52,6 @@ function AIMCQContent() {
     const { user, loading } = useUser();
     const router = useRouter();
 
-    // Redirect if not logged in
-    useEffect(() => {
-        if (!loading && !user) {
-            router.push("/login");
-        }
-    }, [user, loading, router]);
-
     const [topic, setTopic] = useState("");
     const [difficulty, setDifficulty] = useState("Medium");
     const [isGenerating, setIsGenerating] = useState(false);
@@ -74,29 +67,51 @@ function AIMCQContent() {
     const [showResult, setShowResult] = useState(false);
     const [timeLeft, setTimeLeft] = useState(300); // 5 minutes for AI quiz
 
-    // Show loading while checking auth
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-            </div>
-        );
-    }
+    const { setStreak, setXP, setLevel } = useStreak();
+    const [showLevelUp, setShowLevelUp] = useState(false);
+    const [newLevel, setNewLevel] = useState(0);
 
-    // If no user (and not loading), don't render content (will redirect)
-    if (!user) {
-        return null;
-    }
+    // Redirect if not logged in
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push("/login");
+        }
+    }, [user, loading, router]);
 
     // Auto-start for Daily Mode
     useEffect(() => {
-        if (isDaily && !quizReady && !isGenerating && !topic) {
+        if (user && isDaily && !quizReady && !isGenerating && !topic) {
             const randomTopic = DAILY_TOPICS[Math.floor(Math.random() * DAILY_TOPICS.length)];
             setTopic(randomTopic);
             setDifficulty("Medium");
             handleGenerate(randomTopic);
         }
-    }, [isDaily, user]);
+    }, [isDaily, user, quizReady, isGenerating, topic]);
+
+    // Timer Logic
+    useEffect(() => {
+        if (!quizReady || showResult) return;
+        const timer = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    setShowResult(true);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [quizReady, showResult]);
+
+    // Trigger updates once when result is shown
+    useEffect(() => {
+        if (showResult && (isDaily || score > 0)) {
+            const xpEarned = score * (isDaily ? 20 : 15);
+            updateStats(xpEarned);
+            logActivity();
+        }
+    }, [showResult]);
 
     const handleGenerate = async (selectedTopic = topic) => {
         if (!selectedTopic.trim()) return;
@@ -141,22 +156,6 @@ function AIMCQContent() {
         }
     };
 
-    // Timer Logic
-    useEffect(() => {
-        if (!quizReady || showResult) return;
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    setShowResult(true);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [quizReady, showResult]);
-
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -181,10 +180,6 @@ function AIMCQContent() {
             setShowResult(true);
         }
     };
-
-    const { setStreak, setXP, setLevel } = useStreak();
-    const [showLevelUp, setShowLevelUp] = useState(false);
-    const [newLevel, setNewLevel] = useState(0);
 
     const updateStats = async (xpEarned: number) => {
         // User is guaranteed to be logged in here due to the check above
@@ -239,14 +234,19 @@ function AIMCQContent() {
         }
     };
 
-    // Trigger updates once when result is shown
-    useEffect(() => {
-        if (showResult && (isDaily || score > 0)) {
-            const xpEarned = score * (isDaily ? 20 : 15);
-            updateStats(xpEarned);
-            logActivity();
-        }
-    }, [showResult]);
+    // Show loading while checking auth
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+            </div>
+        );
+    }
+
+    // If no user (and not loading), don't render content (will redirect)
+    if (!user) {
+        return null;
+    }
 
     if (showResult) {
         const xpEarned = score * (isDaily ? 20 : 15);
