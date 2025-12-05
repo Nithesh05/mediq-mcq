@@ -14,8 +14,8 @@ export async function POST(req: Request) {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        // Using gemini-flash-latest as confirmed by model list
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+        // Using gemini-1.5-flash for speed and cost efficiency
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
       Generate 5 UNIQUE, HIGH-YIELD multiple-choice questions (MCQs) on the medical topic: "${topic}".
