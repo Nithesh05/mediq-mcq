@@ -89,6 +89,52 @@ export async function GET() {
       )
     `);
 
+    // Feedback Table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS feedback (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        rating INTEGER DEFAULT 5,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Achievements Table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS achievements (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        icon TEXT NOT NULL,
+        xp_reward INTEGER DEFAULT 50
+      )
+    `);
+
+    // User Achievements Table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS user_achievements (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        achievement_id INTEGER NOT NULL,
+        unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, achievement_id)
+      )
+    `);
+
+    // Seed Achievements (if empty)
+    const existingAchievements = await db.query("SELECT COUNT(*) as count FROM achievements");
+    if (existingAchievements[0].count == 0) {
+      await db.query(`
+            INSERT INTO achievements (title, description, icon, xp_reward) VALUES
+            ('First Steps', 'Complete your first quiz', '🎯', 50),
+            ('Streak Master', 'Reach a 7-day streak', '🔥', 200),
+            ('Quiz Whiz', 'Score 100% on a quiz', '🏆', 100),
+            ('Social Butterfly', 'Join a study group', '👥', 50),
+            ('Early Bird', 'Practice before 8 AM', '🌅', 75)
+        `);
+    }
+
     return NextResponse.json({ message: "Database initialized successfully! You can now use the app." });
   } catch (error: any) {
     console.error("Setup Error:", error);
