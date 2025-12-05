@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: '/',
             disallow: ['/api/', '/admin/'],
         },
-        sitemap: 'https://mediq.vercel.app/sitemap.xml',
+        sitemap: 'https://mediq-mcq.vercel.app/sitemap.xml',
     };
 }

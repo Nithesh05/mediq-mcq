@@ -56,19 +56,19 @@ export default function RootLayout({
                 {
                   "@type": "WebSite",
                   "name": "Mediq MCQ",
-                  "url": "https://mediq.vercel.app",
+                  "url": "https://mediq-mcq.vercel.app",
                   "description": "Free AI-powered medical MCQ practice platform for MBBS and NEET PG aspirants.",
                   "potentialAction": {
                     "@type": "SearchAction",
-                    "target": "https://mediq.vercel.app/mcqs?query={search_term_string}",
+                    "target": "https://mediq-mcq.vercel.app/mcqs?query={search_term_string}",
                     "query-input": "required name=search_term_string"
                   }
                 },
                 {
                   "@type": "Organization",
                   "name": "Mediq MCQ",
-                  "url": "https://mediq.vercel.app",
-                  "logo": "https://mediq.vercel.app/logo.jpg",
+                  "url": "https://mediq-mcq.vercel.app",
+                  "logo": "https://mediq-mcq.vercel.app/logo.jpg",
                   "sameAs": [
                     "https://twitter.com/nivaxtech"
                   ],
