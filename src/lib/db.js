@@ -18,44 +18,56 @@ async function getSql() {
   if (sqlInstance) return sqlInstance;
 
   if (isProd) {
-    const { createPool, createClient } = require('@vercel/postgres');
-
     try {
-      // First, try to create a Pool (preferred for serverless)
-      // This throws immediately if the connection string is a "Direct Connection" string
+      // Attempt 1: Try @vercel/postgres Pool (Preferred for Vercel)
+      const { createPool } = require('@vercel/postgres');
       const pool = createPool({
         connectionString: connectionString,
         ssl: { rejectUnauthorized: false }
       });
 
-      // If we got here, the pool was created successfully (or at least didn't throw on config)
+      // Test the pool connection immediately to catch errors early
+      // Note: createPool is lazy, so we need to query to test it
+      await pool.query('SELECT 1');
+
       sqlInstance = pool;
       return sqlInstance;
 
-    } catch (error) {
-      // Check if the error is about using a direct connection string with a pool
-      if (error.message.includes('invalid_connection_string') ||
-        error.message.includes('direct connection') ||
-        error.code === 'VercelPostgresError') {
+    } catch (vercelError) {
+      console.warn("Vercel SDK Pool creation failed. Trying fallback strategies...", vercelError.message);
 
-        console.warn("Pool creation failed (likely direct connection string). Falling back to Client...");
+      // Attempt 2: Try @vercel/postgres Client (for Direct Connections)
+      try {
+        const { createClient } = require('@vercel/postgres');
+        const client = createClient({
+          connectionString: connectionString,
+          ssl: { rejectUnauthorized: false }
+        });
+        await client.connect();
+        sqlInstance = client;
+        return sqlInstance;
+      } catch (clientError) {
+        console.warn("Vercel SDK Client failed. Trying raw 'pg' driver...", clientError.message);
 
+        // Attempt 3: Try raw 'pg' driver (Universal fallback)
         try {
-          const client = createClient({
+          // 'pg' should be available as it is a dependency of @vercel/postgres
+          // But we will ask user to install it explicitly to be safe
+          const { Client } = require('pg');
+          const client = new Client({
             connectionString: connectionString,
             ssl: { rejectUnauthorized: false }
           });
-          await client.connect(); // Client requires explicit connection
+          await client.connect();
           sqlInstance = client;
           return sqlInstance;
-        } catch (clientError) {
-          console.error("Failed to connect with Client fallback:", clientError);
-          throw clientError;
+        } catch (pgError) {
+          console.error("All database connection attempts failed.");
+          console.error("1. Vercel Pool Error:", vercelError.message);
+          console.error("2. Vercel Client Error:", clientError ? clientError.message : "N/A");
+          console.error("3. Raw PG Error:", pgError.message);
+          throw new Error(`Database connection failed completely. Raw PG Error: ${pgError.message}`);
         }
-      } else {
-        // Some other error occurred
-        console.error("Failed to initialize Vercel Postgres Pool:", error);
-        throw error;
       }
     }
   }
