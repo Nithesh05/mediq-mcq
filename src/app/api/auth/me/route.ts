@@ -7,32 +7,41 @@ export async function GET() {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("session");
 
+    console.log("[Auth Me] Checking session...");
+
     if (!sessionCookie) {
+      console.log("[Auth Me] No session cookie found.");
       return NextResponse.json({ user: null }, { status: 200 });
     }
 
     let sessionData;
     try {
       sessionData = JSON.parse(Buffer.from(sessionCookie.value, "base64").toString("utf-8"));
+      console.log("[Auth Me] Session data decoded:", sessionData);
     } catch (e) {
-      console.error("Invalid session cookie:", e);
+      console.error("[Auth Me] Invalid session cookie format:", e);
       return NextResponse.json({ user: null }, { status: 200 });
     }
 
     const userId = sessionData?.id;
     if (!userId) {
+      console.log("[Auth Me] No user ID in session.");
       return NextResponse.json({ user: null }, { status: 200 });
     }
 
     // Fetch user
+    console.log("[Auth Me] Fetching user from DB:", userId);
     const user: any = await db.get(
       "SELECT id, username, xp, role, email, security_question FROM users WHERE id = ?",
       [userId]
     );
 
     if (!user) {
+      console.log("[Auth Me] User not found in DB.");
       return NextResponse.json({ user: null }, { status: 200 });
     }
+
+    console.log("[Auth Me] User found:", user.username);
 
     // Fetch streak
     const streak: any = await db.get(
@@ -48,7 +57,7 @@ export async function GET() {
 
     return NextResponse.json({ user: responseUser }, { status: 200 });
   } catch (error) {
-    console.error("Me Error:", error);
+    console.error("[Auth Me] Critical Error:", error);
     return NextResponse.json({ user: null }, { status: 200 });
   }
 }
