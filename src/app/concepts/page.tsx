@@ -55,6 +55,16 @@ export default function ConceptsPage() {
         return yearMatch && searchMatch;
     });
 
+    // Auto-generate if no local results
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchQuery.trim().length > 2 && filteredConcepts.length === 0 && !isGenerating && !aiResult) {
+                handleAISearch();
+            }
+        }, 1000); // 1s debounce to avoid rapid API calls while typing
+        return () => clearTimeout(timer);
+    }, [searchQuery, filteredConcepts.length, isGenerating, aiResult]);
+
     return (
         <div className="w-full max-w-7xl mx-auto px-4 py-8 pt-20 md:p-6 md:pt-6">
             <header className="mb-8 md:mb-12 text-center">
@@ -171,21 +181,14 @@ export default function ConceptsPage() {
                                 <ConceptDetail concept={aiResult} />
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center text-center">
+                            <div className="flex flex-col items-center text-center opacity-60">
                                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                                     <Search className="text-slate-400" size={32} />
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-800 mb-2">No local results found</h3>
+                                <h3 className="text-xl font-bold text-slate-800 mb-2">Searching online...</h3>
                                 <p className="text-slate-500 mb-6 max-w-md mx-auto">
-                                    We couldn't find "{searchQuery}" in our offline database. Would you like to use AI to generate a study guide?
+                                    Checking our AI database for "{searchQuery}"...
                                 </p>
-                                <button
-                                    onClick={handleAISearch}
-                                    className="px-6 py-3 bg-[var(--primary)] text-white rounded-xl font-medium hover:bg-teal-700 transition-colors shadow-lg shadow-teal-200 flex items-center gap-2"
-                                >
-                                    <Brain size={20} />
-                                    Generate "{searchQuery}" with AI
-                                </button>
                             </div>
                         )}
                     </div>

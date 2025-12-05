@@ -63,6 +63,22 @@ function QuizContent() {
         }
     };
 
+    // Trigger updates once when result is shown
+    useEffect(() => {
+        if (showResult && score > 0) {
+            const xpEarned = score * 10;
+            updateStats(xpEarned);
+            logActivity();
+
+            // Send Notification
+            const percentage = Math.round((score / questions.length) * 100);
+            sendPushNotification("Quiz Completed!", {
+                body: `You scored ${percentage}% and earned ${xpEarned} XP!`,
+                icon: "/favicon.ico"
+            });
+        }
+    }, [showResult]);
+
     const handleNext = () => {
         if (currentIndex < questions.length - 1) {
             setCurrentIndex((prev) => prev + 1);
@@ -131,7 +147,8 @@ function QuizContent() {
 
         // Trigger updates once when result is shown
         useEffect(() => {
-            if (score > 0) {
+            if (showResult && score > 0) {
+                const xpEarned = score * 10;
                 updateStats(xpEarned);
                 logActivity();
 
@@ -142,7 +159,7 @@ function QuizContent() {
                     icon: "/favicon.ico"
                 });
             }
-        }, []);
+        }, [showResult]); // Only run when showResult changes to true
 
         const logActivity = async () => {
             try {
