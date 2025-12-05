@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Zap, ArrowRight, Flame, CheckCircle, Users, ImageIcon, Trophy, Star } from "lucide-react";
