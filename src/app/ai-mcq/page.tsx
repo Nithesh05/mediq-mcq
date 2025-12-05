@@ -35,24 +35,15 @@ export default function AIMCQGenerator() {
 }
 
 function AIMCQContent() {
-    const searchParams = useSearchParams();
-    const mode = searchParams.get("mode");
-    const isDaily = mounted && mode === "daily";
-    const { user, loading } = useUser(); // Get user and loading state
-    const router = useRouter(); // Import useRouter
-
-    // Redirect if not logged in
-    useEffect(() => {
-        if (!loading && !user) {
-            router.push("/login");
-        }
-    }, [user, loading, router]);
-
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    const searchParams = useSearchParams();
+    const mode = searchParams.get("mode");
+    const isDaily = mounted && mode === "daily";
 
     const [topic, setTopic] = useState("");
     const [difficulty, setDifficulty] = useState("Medium");
