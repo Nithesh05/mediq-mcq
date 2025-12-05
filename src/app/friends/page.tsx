@@ -645,21 +645,58 @@ export default function FriendsPage() {
                                             );
                                         })()}
 
-                                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                                            <button className="filter-btn" onClick={() => setShowManageModal(null)}>Close</button>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem' }}>
                                             <button
-                                                className="btn-primary"
-                                                onClick={() => {
-                                                    const nameInput = document.getElementById('edit-group-name') as HTMLInputElement;
-                                                    const topicInput = document.getElementById('edit-group-topic') as HTMLInputElement;
-                                                    handleUpdateGroup(showManageModal, {
-                                                        name: nameInput.value,
-                                                        topic: topicInput.value
-                                                    });
+                                                onClick={async () => {
+                                                    if (!confirm("Are you sure you want to delete this group? This action cannot be undone.")) return;
+                                                    try {
+                                                        const res = await fetch('/api/groups/delete', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ groupId: showManageModal }),
+                                                        });
+                                                        if (res.ok) {
+                                                            addNotification("Group deleted successfully");
+                                                            setShowManageModal(null);
+                                                            fetchGroups();
+                                                        } else {
+                                                            const data = await res.json();
+                                                            addNotification(data.error || "Failed to delete group");
+                                                        }
+                                                    } catch (e) {
+                                                        addNotification("Error deleting group");
+                                                    }
+                                                }}
+                                                style={{
+                                                    padding: '0.75rem 1.5rem',
+                                                    fontSize: '0.9rem',
+                                                    borderRadius: '0.5rem',
+                                                    backgroundColor: '#fee2e2',
+                                                    color: '#ef4444',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    fontWeight: '600'
                                                 }}
                                             >
-                                                Save Changes
+                                                Delete Group
                                             </button>
+
+                                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                                <button className="filter-btn" onClick={() => setShowManageModal(null)}>Close</button>
+                                                <button
+                                                    className="btn-primary"
+                                                    onClick={() => {
+                                                        const nameInput = document.getElementById('edit-group-name') as HTMLInputElement;
+                                                        const topicInput = document.getElementById('edit-group-topic') as HTMLInputElement;
+                                                        handleUpdateGroup(showManageModal, {
+                                                            name: nameInput.value,
+                                                            topic: topicInput.value
+                                                        });
+                                                    }}
+                                                >
+                                                    Save Changes
+                                                </button>
+                                            </div>
                                         </div>
                                     </motion.div>
                                 </div>

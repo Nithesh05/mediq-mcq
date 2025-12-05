@@ -1,7 +1,6 @@
-"use client";
-
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Zap, ArrowRight, Flame, CheckCircle, Users, ImageIcon, Trophy } from "lucide-react";
+import { Zap, ArrowRight, Flame, CheckCircle, Users, ImageIcon, Trophy, Star } from "lucide-react";
 import Link from "next/link";
 import PageTransition from "@/components/PageTransition";
 import { useUser } from "@/hooks/useUser";
@@ -26,6 +25,20 @@ const itemVariants = {
 export default function Home() {
   const { user, loading } = useUser();
   const { streak, level } = useStreak();
+  const [stats, setStats] = useState({ accuracy: 0, questionsSolved: 0 });
+
+  useEffect(() => {
+    if (user) {
+      fetch('/api/user/stats')
+        .then(res => res.json())
+        .then(data => {
+          if (data.accuracy !== undefined) {
+            setStats(data);
+          }
+        })
+        .catch(err => console.error("Failed to fetch stats", err));
+    }
+  }, [user]);
 
   return (
     <PageTransition className="container">
@@ -99,22 +112,55 @@ export default function Home() {
           {/* Abstract Phone Mockup */}
           <div className="phone-mockup">
             <div className="phone-notch"></div>
-            <div className="phone-screen">
-              <div className="streak-card">
-                <Flame size={32} className="streak-icon" />
-              </div>
-              <h3>{streak > 0 ? `Day ${streak} Streak` : "Start Streak!"}</h3>
-              <p className="streak-subtitle">{streak > 0 ? "Keep it alive!" : "Practice daily"}</p>
+            <div className="phone-screen" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', justifyContent: 'center' }}>
 
-              <div className="illustration-container">
-                <img
-                  src="/medical-illustration.png"
-                  alt="Medical Study"
-                  className="medical-img"
-                />
+              {/* Streak Header */}
+              <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#fff7ed', padding: '0.5rem 1rem', borderRadius: '2rem', color: '#ea580c', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                  <Flame size={18} fill="currentColor" />
+                  {streak > 0 ? `${streak} Day Streak` : "Start Streak"}
+                </div>
               </div>
 
-              {/* Removed redundant Continue button */}
+              {/* Progress Card */}
+              <div className="stats-card" style={{ backgroundColor: 'white', padding: '1.25rem', borderRadius: '1rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                  <Star size={24} fill="#f97316" color="#f97316" />
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: '#1e293b' }}>Your Progress</h3>
+                </div>
+
+                {/* Accuracy */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#64748b' }}>
+                    <span>Accuracy</span>
+                    <span style={{ color: '#0f172a' }}>{stats.accuracy}%</span>
+                  </div>
+                  <div style={{ height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${stats.accuracy}%` }}
+                      transition={{ duration: 1, delay: 0.5 }}
+                      style={{ height: '100%', backgroundColor: '#22c55e', borderRadius: '4px' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Questions Solved */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#64748b' }}>
+                    <span>Questions Solved</span>
+                    <span style={{ color: '#0f172a' }}>{stats.questionsSolved}</span>
+                  </div>
+                  <div style={{ height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((stats.questionsSolved / 1000) * 100, 100)}%` }} // Cap at 100% for visual
+                      transition={{ duration: 1, delay: 0.7 }}
+                      style={{ height: '100%', backgroundColor: '#0f766e', borderRadius: '4px' }}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
