@@ -26,15 +26,20 @@ const DAILY_TOPICS = [
     "Glaucoma", "Otitis Media", "Rheumatoid Arthritis", "Osteoporosis", "Gout"
 ];
 
+import ClientOnly from "@/components/ClientOnly";
+
 export default function AIMCQGenerator() {
     return (
         <Suspense fallback={<div>Loading...</div>}>
-            <AIMCQContent />
+            <ClientOnly>
+                <AIMCQContent />
+            </ClientOnly>
         </Suspense>
     );
 }
 
 function AIMCQContent() {
+    // ... (keep existing state/hooks) ...
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -415,7 +420,7 @@ function AIMCQContent() {
     }
 
     return (
-        <PageTransition className="ai-container">
+        <div className="ai-container">
             <div className="ai-header">
                 <div className="ai-icon-wrapper">
                     {mounted && isDaily ? <Calendar size={32} className="text-purple" /> : <Sparkles size={32} className="text-purple" />}
@@ -560,6 +565,6 @@ function AIMCQContent() {
                     </motion.div>
                 </div>
             )}
-        </PageTransition>
+        </div>
     );
 }
