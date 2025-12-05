@@ -34,6 +34,8 @@ export const metadata: Metadata = {
 import { ThemeProvider } from "@/context/ThemeContext";
 import { SoundProvider } from "@/context/SoundContext";
 
+import ClientOnly from "@/components/ClientOnly";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,14 +45,16 @@ export default function RootLayout({
     <html lang="en">
       <body className="main-layout">
         <ThemeProvider>
-          <SoundProvider>
-            <StreakProvider>
-              <Sidebar />
-              <main className="main-content">
-                {children}
-              </main>
-            </StreakProvider>
-          </SoundProvider>
+          <ClientOnly>
+            <SoundProvider>
+              <StreakProvider>
+                <Sidebar />
+                <main className="main-content">
+                  {children}
+                </main>
+              </StreakProvider>
+            </SoundProvider>
+          </ClientOnly>
         </ThemeProvider>
       </body>
     </html>
