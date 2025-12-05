@@ -29,6 +29,9 @@ export const metadata: Metadata = {
   icons: {
     icon: "/logo.jpg",
   },
+  verification: {
+    google: "trcYjGhdjECX1lv2YTVy1IZ254K2PMGdq9xdkdSNXCg",
+  },
 };
 
 import { ThemeProvider } from "@/context/ThemeContext";
