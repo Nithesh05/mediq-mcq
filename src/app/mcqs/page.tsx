@@ -1,19 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { BookOpen, Filter, Play, Star, Award, Brain } from "lucide-react";
 import { mcqDatabase, Difficulty } from "@/data/mcqs";
+import { useUser } from "@/hooks/useUser";
 
 const years = ["All", "Year 1", "Year 2", "Year 3", "Year 4"];
 const subjects = ["All", "Anatomy", "Physiology", "Pathology", "Pharmacology", "Medicine"];
 const difficulties: Difficulty[] = ["Easy", "Medium", "Hard"];
 
 export default function MCQDashboard() {
+    const { user } = useUser();
     const [selectedYear, setSelectedYear] = useState("All");
     const [selectedSubject, setSelectedSubject] = useState("All");
     const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | "All">("All");
+    const [stats, setStats] = useState({ accuracy: 0, questionsSolved: 0 });
+
+    useEffect(() => {
+        if (user) {
+            fetch('/api/user/stats')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.accuracy !== undefined) {
+                        setStats(data);
+                    }
+                })
+                .catch(err => console.error("Failed to fetch stats", err));
+        }
+    }, [user]);
 
     const filteredMCQs = mcqDatabase.filter((q) => {
         const yearMatch = selectedYear === "All" || q.year.includes(selectedYear);
@@ -185,19 +201,25 @@ export default function MCQDashboard() {
                             <div>
                                 <div className="flex justify-between text-sm mb-1">
                                     <span className="text-slate-600 dark:text-slate-400">Accuracy</span>
-                                    <span className="font-bold text-slate-900 dark:text-white">78%</span>
+                                    <span className="font-bold text-slate-900 dark:text-white">{stats.accuracy}%</span>
                                 </div>
                                 <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                    <div className="h-full bg-green-500 w-[78%]" />
+                                    <div
+                                        className="h-full bg-green-500 transition-all duration-1000"
+                                        style={{ width: `${stats.accuracy}%` }}
+                                    />
                                 </div>
                             </div>
                             <div>
                                 <div className="flex justify-between text-sm mb-1">
                                     <span className="text-slate-600 dark:text-slate-400">Questions Solved</span>
-                                    <span className="font-bold text-slate-900 dark:text-white">124</span>
+                                    <span className="font-bold text-slate-900 dark:text-white">{stats.questionsSolved}</span>
                                 </div>
                                 <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                    <div className="h-full bg-[var(--primary)] w-[45%]" />
+                                    <div
+                                        className="h-full bg-[var(--primary)] transition-all duration-1000"
+                                        style={{ width: `${Math.min((stats.questionsSolved / 1000) * 100, 100)}%` }}
+                                    />
                                 </div>
                             </div>
                         </div>
