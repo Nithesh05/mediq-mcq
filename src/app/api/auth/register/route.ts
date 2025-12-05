@@ -51,8 +51,11 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ message: 'User registered successfully' }, { status: 201 });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Registration error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({
+            error: error.message || 'Internal server error',
+            details: String(error)
+        }, { status: 500 });
     }
 }
