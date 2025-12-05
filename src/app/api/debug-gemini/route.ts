@@ -20,7 +20,7 @@ export async function GET() {
 
         // Let's try a fallback list of models to see which one works.
         const modelsToTry = ["gemini-1.5-flash", "gemini-pro", "gemini-1.0-pro", "gemini-1.5-pro"];
-        const results = {};
+        const results: Record<string, string> = {};
 
         for (const modelName of modelsToTry) {
             try {
