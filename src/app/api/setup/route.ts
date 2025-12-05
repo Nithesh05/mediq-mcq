@@ -49,7 +49,7 @@ export async function GET() {
         title TEXT NOT NULL,
         message TEXT NOT NULL,
         type TEXT DEFAULT 'info',
-        is_read BOOLEAN DEFAULT 0,
+        is_read BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
