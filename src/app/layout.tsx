@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     creator: "@nivaxtech",
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: "/logo.jpg",
   },
 };
 

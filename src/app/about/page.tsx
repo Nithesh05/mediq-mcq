@@ -82,12 +82,12 @@ export default function AboutPage() {
                                 description="An AI-driven medical learning platform that helps students practice high-quality MCQs, track progress, strengthen weak topics, and learn smarter every day."
                             />
                             <ProjectItem
-                                name="StartX"
-                                description="A smart utility toolkit designed to simplify workflows for students, creators, and developers."
+                                name="STARTX AI Chatbot"
+                                description="STARTX AI Chatbot is a business-focused intelligent assistant designed to automate customer interactions and streamline daily operations. Powered by advanced AI technology, it delivers accurate, scalable, and seamless communication solutions for modern businesses."
                             />
                             <ProjectItem
-                                name="AI Meme Generator"
-                                description="An intelligent tool that instantly creates memes using AI prompts."
+                                name="AI-Powered Real-Time Meme Generator"
+                                description="Built a real-time AI web app that detects facial expressions through the webcam and instantly generates matching memes. Developed using Teachable Machine, TensorFlow.js, and JavaScript to provide a fast, interactive, and fully client-side experience."
                             />
                         </ul>
 
