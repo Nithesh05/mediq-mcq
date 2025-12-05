@@ -56,8 +56,8 @@ export default function ConceptsPage() {
     });
 
     return (
-        <div className="container mx-auto p-6">
-            <header className="mb-12 text-center">
+        <div className="w-full max-w-7xl mx-auto px-4 py-8 pt-20 md:p-6 md:pt-6">
+            <header className="mb-8 md:mb-12 text-center">
                 <h1 className="text-4xl font-bold text-slate-900 mb-4">Medical Concepts</h1>
                 <p className="text-xl text-slate-600 max-w-2xl mx-auto">
                     Master the fundamentals with concise explanations and key points.

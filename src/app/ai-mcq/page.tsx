@@ -63,6 +63,7 @@ function AIMCQContent() {
     const [difficulty, setDifficulty] = useState("Medium");
     const [isGenerating, setIsGenerating] = useState(false);
     const [quizReady, setQuizReady] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // Quiz State
     const [questions, setQuestions] = useState<AIQuestion[]>([]);
@@ -101,14 +102,20 @@ function AIMCQContent() {
         if (!selectedTopic.trim()) return;
 
         setIsGenerating(true);
+        setError(null);
         setQuestions([]); // Clear previous questions
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout for AI
 
         try {
             const response = await fetch("/api/gemini", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ topic: selectedTopic, difficulty }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
             const data = await response.json();
 
@@ -124,9 +131,11 @@ function AIMCQContent() {
             setShowResult(false);
             setIsAnswered(false);
             setSelectedOption(null);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Generation Error:", error);
-            alert("Error: " + (error instanceof Error ? error.message : "Something went wrong"));
+            let msg = error.message || "Something went wrong";
+            if (error.name === 'AbortError') msg = "Request timed out. The AI is taking too long.";
+            setError(msg);
         } finally {
             setIsGenerating(false);
         }
@@ -446,6 +455,13 @@ function AIMCQContent() {
 
                 {mounted && isDaily ? (
                     <div className="text-center py-12">
+                        {error && (
+                            <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl border border-red-200 flex items-center gap-2 justify-center mx-auto max-w-md">
+                                <AlertCircle size={20} />
+                                <span>{error}</span>
+                                <button onClick={() => handleGenerate(topic)} className="ml-2 underline font-bold">Retry</button>
+                            </div>
+                        )}
                         {isGenerating ? (
                             <div className="flex flex-col items-center gap-4">
                                 <RefreshCw size={48} className="spin text-purple" />
@@ -468,6 +484,12 @@ function AIMCQContent() {
                     </div>
                 ) : (
                     <div className="ai-form">
+                        {error && (
+                            <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg border border-red-200 flex items-center gap-2 text-sm">
+                                <AlertCircle size={16} />
+                                <span>{error}</span>
+                            </div>
+                        )}
                         <div className="form-group">
                             <label className="text-slate-700 dark:text-slate-300">What do you want to practice?</label>
                             <input
