@@ -439,7 +439,7 @@ function AIMCQContent() {
                 <div className="blob blob-purple" />
                 <div className="blob blob-blue" />
 
-                {isDaily ? (
+                {mounted && isDaily ? (
                     <div className="text-center py-12">
                         {isGenerating ? (
                             <div className="flex flex-col items-center gap-4">
@@ -510,7 +510,7 @@ function AIMCQContent() {
                 )}
             </div>
 
-            {!isDaily && (
+            {mounted && !isDaily && (
                 <div className="ai-features">
                     <div className="feature-card bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                         <div className="feature-icon-wrapper bg-blue-light text-blue">

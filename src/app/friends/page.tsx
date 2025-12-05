@@ -431,15 +431,42 @@ export default function FriendsPage() {
                                                         HOST
                                                     </span>
                                                 ) : (
-                                                    <motion.button
-                                                        whileHover={{ scale: 1.05 }}
-                                                        whileTap={{ scale: 0.95 }}
-                                                        className="btn-primary"
-                                                        style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', borderRadius: '0.5rem' }}
-                                                        onClick={() => handleJoinGroup(group.id)}
-                                                    >
-                                                        Join
-                                                    </motion.button>
+                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                        {user?.role === 'admin' && (
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (!confirm("Are you sure you want to delete this group? This action cannot be undone.")) return;
+                                                                    try {
+                                                                        const res = await fetch('/api/groups/delete', {
+                                                                            method: 'POST',
+                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                            body: JSON.stringify({ groupId: group.id }),
+                                                                        });
+                                                                        if (res.ok) {
+                                                                            addNotification("Group deleted by Admin");
+                                                                            fetchGroups();
+                                                                        } else {
+                                                                            addNotification("Failed to delete group");
+                                                                        }
+                                                                    } catch (e) {
+                                                                        addNotification("Error deleting group");
+                                                                    }
+                                                                }}
+                                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '0.5rem', backgroundColor: '#ef4444', color: 'white', border: 'none', cursor: 'pointer' }}
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        )}
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.05 }}
+                                                            whileTap={{ scale: 0.95 }}
+                                                            className="btn-primary"
+                                                            style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', borderRadius: '0.5rem' }}
+                                                            onClick={() => handleJoinGroup(group.id)}
+                                                        >
+                                                            Join
+                                                        </motion.button>
+                                                    </div>
                                                 )}
                                             </div>
                                         </motion.div>
