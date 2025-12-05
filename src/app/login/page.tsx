@@ -31,8 +31,8 @@ export default function LoginPage() {
                 throw new Error(data.error || "Login failed");
             }
 
-            router.push("/");
-            router.refresh();
+            // Force a hard reload to ensure all client-side states (like Sidebar) update correctly
+            window.location.href = "/";
         } catch (err: any) {
             setError(err.message);
         } finally {
