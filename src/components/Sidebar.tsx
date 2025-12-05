@@ -10,6 +10,8 @@ import FeedbackModal from "./FeedbackModal";
 import ComingSoonModal from "./ComingSoonModal";
 import NotificationsModal from "./NotificationsModal";
 
+import ClientOnly from "./ClientOnly";
+
 export default function Sidebar() {
     const pathname = usePathname();
     const { user } = useUser();
@@ -45,7 +47,7 @@ export default function Sidebar() {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     return (
-        <>
+        <ClientOnly>
             {/* Mobile Menu Toggle */}
             <button
                 onClick={() => setIsMobileOpen(!isMobileOpen)}
@@ -150,6 +152,6 @@ export default function Sidebar() {
             <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
             <NotificationsModal isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
             <ComingSoonModal isOpen={isPremiumOpen} onClose={() => setIsPremiumOpen(false)} featureName="MEDIQ Premium" />
-        </>
+        </ClientOnly>
     );
 }
