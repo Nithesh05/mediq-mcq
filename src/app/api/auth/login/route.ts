@@ -23,7 +23,8 @@ export async function POST(request: Request) {
     const cookieStore = await cookies();
     cookieStore.set("session", encodedSession, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true, // Always secure in production/Vercel
+      sameSite: "lax", // Required for modern browsers
       maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
