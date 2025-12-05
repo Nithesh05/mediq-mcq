@@ -24,6 +24,7 @@ const itemVariants = {
 
 export default function FriendsPage() {
     const { user } = useUser();
+    console.log("FriendsPage User:", user, "Role:", user?.role);
     const [activeTab, setActiveTab] = useState<'leaderboard' | 'friends'>('friends');
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [showManageModal, setShowManageModal] = useState<number | null>(null); // ID of group being managed
