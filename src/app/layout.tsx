@@ -44,6 +44,37 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="main-layout">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "WebSite",
+                  "name": "Mediq MCQ",
+                  "url": "https://mediq.vercel.app",
+                  "description": "Free AI-powered medical MCQ practice platform for MBBS and NEET PG aspirants.",
+                  "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": "https://mediq.vercel.app/mcqs?query={search_term_string}",
+                    "query-input": "required name=search_term_string"
+                  }
+                },
+                {
+                  "@type": "Organization",
+                  "name": "Mediq MCQ",
+                  "url": "https://mediq.vercel.app",
+                  "logo": "https://mediq.vercel.app/logo.jpg",
+                  "sameAs": [
+                    "https://twitter.com/nivaxtech"
+                  ],
+                  "description": "Educational platform for medical students."
+                }
+              ]
+            })
+          }}
+        />
         <ThemeProvider>
           <ClientOnly>
             <SoundProvider>
