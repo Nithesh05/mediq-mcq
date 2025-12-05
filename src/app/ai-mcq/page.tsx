@@ -37,7 +37,7 @@ export default function AIMCQGenerator() {
 function AIMCQContent() {
     const searchParams = useSearchParams();
     const mode = searchParams.get("mode");
-    const isDaily = mode === "daily";
+    const isDaily = mounted && mode === "daily";
     const { user, loading } = useUser(); // Get user and loading state
     const router = useRouter(); // Import useRouter
 
