@@ -44,6 +44,15 @@ function AIMCQContent() {
     const searchParams = useSearchParams();
     const mode = searchParams.get("mode");
     const isDaily = mounted && mode === "daily";
+    const { user, loading } = useUser();
+    const router = useRouter();
+
+    // Redirect if not logged in
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push("/login");
+        }
+    }, [user, loading, router]);
 
     const [topic, setTopic] = useState("");
     const [difficulty, setDifficulty] = useState("Medium");
