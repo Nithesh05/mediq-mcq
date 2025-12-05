@@ -24,6 +24,9 @@ function QuizContent() {
     const [showResult, setShowResult] = useState(false);
     const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
 
+    const { setStreak, setXP } = useStreak();
+    const { sendPushNotification } = useNotifications();
+
     // Load and shuffle questions based on filters
     useEffect(() => {
         const filtered = mcqDatabase.filter((q) => {
@@ -54,70 +57,6 @@ function QuizContent() {
         return () => clearInterval(timer);
     }, [showResult, questions.length]);
 
-    const handleOptionClick = (index: number) => {
-        if (isAnswered) return;
-        setSelectedOption(index);
-        setIsAnswered(true);
-        if (index === questions[currentIndex].correctAnswer) {
-            setScore((prev) => prev + 1);
-        }
-    };
-
-    // Trigger updates once when result is shown
-    useEffect(() => {
-        if (showResult && score > 0) {
-            const xpEarned = score * 10;
-            updateStats(xpEarned);
-            logActivity();
-
-            // Send Notification
-            const percentage = Math.round((score / questions.length) * 100);
-            sendPushNotification("Quiz Completed!", {
-                body: `You scored ${percentage}% and earned ${xpEarned} XP!`,
-                icon: "/favicon.ico"
-            });
-        }
-    }, [showResult]);
-
-    const handleNext = () => {
-        if (currentIndex < questions.length - 1) {
-            setCurrentIndex((prev) => prev + 1);
-            setSelectedOption(null);
-            setIsAnswered(false);
-        } else {
-            setShowResult(true);
-        }
-    };
-
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    const { setStreak, setXP } = useStreak();
-    const { sendPushNotification } = useNotifications();
-
-    if (questions.length === 0) {
-        return (
-            <div className="quiz-empty-state">
-                <div className="empty-icon-wrapper">
-                    <AlertCircle size={32} />
-                </div>
-                <h2>No Questions Found</h2>
-                <p>
-                    We couldn't find any questions matching your filters. Try adjusting them to find more content.
-                </p>
-                <button
-                    onClick={() => router.back()}
-                    className="btn btn-primary"
-                >
-                    Go Back
-                </button>
-            </div>
-        );
-    }
-
     const updateStats = async (xpEarned: number) => {
         try {
             // Update Streak
@@ -142,46 +81,89 @@ function QuizContent() {
         }
     };
 
+    const logActivity = async () => {
+        try {
+            const percentage = Math.round((score / questions.length) * 100);
+            const res = await fetch('/api/activity/log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'quiz_completed',
+                    details: `${subjectParam} Quiz (${difficultyParam})`,
+                    score: percentage
+                })
+            });
+            const data = await res.json();
+            if (data.newAchievements && data.newAchievements.length > 0) {
+                // console.log("Unlocked achievements:", data.newAchievements);
+            }
+        } catch (error) {
+            console.error("Failed to log activity", error);
+        }
+    };
+
+    // Trigger updates once when result is shown
+    useEffect(() => {
+        if (showResult && score > 0) {
+            const xpEarned = score * 10;
+            updateStats(xpEarned);
+            logActivity();
+
+            // Send Notification
+            const percentage = Math.round((score / questions.length) * 100);
+            sendPushNotification("Quiz Completed!", {
+                body: `You scored ${percentage}% and earned ${xpEarned} XP!`,
+                icon: "/favicon.ico"
+            });
+        }
+    }, [showResult]);
+
+    const handleOptionClick = (index: number) => {
+        if (isAnswered) return;
+        setSelectedOption(index);
+        setIsAnswered(true);
+        if (index === questions[currentIndex].correctAnswer) {
+            setScore((prev) => prev + 1);
+        }
+    };
+
+    const handleNext = () => {
+        if (currentIndex < questions.length - 1) {
+            setCurrentIndex((prev) => prev + 1);
+            setSelectedOption(null);
+            setIsAnswered(false);
+        } else {
+            setShowResult(true);
+        }
+    };
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    if (questions.length === 0) {
+        return (
+            <div className="quiz-empty-state">
+                <div className="empty-icon-wrapper">
+                    <AlertCircle size={32} />
+                </div>
+                <h2>No Questions Found</h2>
+                <p>
+                    We couldn't find any questions matching your filters. Try adjusting them to find more content.
+                </p>
+                <button
+                    onClick={() => router.back()}
+                    className="btn btn-primary"
+                >
+                    Go Back
+                </button>
+            </div>
+        );
+    }
+
     if (showResult) {
-        const xpEarned = score * 10;
-
-        // Trigger updates once when result is shown
-        useEffect(() => {
-            if (showResult && score > 0) {
-                const xpEarned = score * 10;
-                updateStats(xpEarned);
-                logActivity();
-
-                // Send Notification
-                const percentage = Math.round((score / questions.length) * 100);
-                sendPushNotification("Quiz Completed!", {
-                    body: `You scored ${percentage}% and earned ${xpEarned} XP!`,
-                    icon: "/favicon.ico"
-                });
-            }
-        }, [showResult]); // Only run when showResult changes to true
-
-        const logActivity = async () => {
-            try {
-                const percentage = Math.round((score / questions.length) * 100);
-                const res = await fetch('/api/activity/log', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        type: 'quiz_completed',
-                        details: `${subjectParam} Quiz (${difficultyParam})`,
-                        score: percentage
-                    })
-                });
-                const data = await res.json();
-                if (data.newAchievements && data.newAchievements.length > 0) {
-                    // console.log("Unlocked achievements:", data.newAchievements);
-                }
-            } catch (error) {
-                console.error("Failed to log activity", error);
-            }
-        };
-
         const percentage = Math.round((score / questions.length) * 100);
         return (
             <div className="quiz-result-container">
