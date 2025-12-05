@@ -68,7 +68,21 @@ export async function POST(req: Request) {
 
         try {
             const questions = JSON.parse(cleanedText);
-            return NextResponse.json({ questions });
+
+            if (!Array.isArray(questions)) {
+                throw new Error("AI response is not an array");
+            }
+
+            // Validate structure
+            const validatedQuestions = questions.map((q: any, index: number) => ({
+                id: q.id || index + 1,
+                question: q.question || "Question text missing",
+                options: Array.isArray(q.options) ? q.options : ["Option A", "Option B", "Option C", "Option D"],
+                correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+                explanation: q.explanation || "No explanation provided."
+            }));
+
+            return NextResponse.json({ questions: validatedQuestions });
         } catch (parseError) {
             console.error("JSON Parse Error:", parseError, "Text:", cleanedText);
             return NextResponse.json(
