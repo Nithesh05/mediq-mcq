@@ -91,6 +91,9 @@ export default function AccountPage() {
                             <span className="w-2 h-2 rounded-full bg-green-500"></span>
                             Online • Medical Student
                         </p>
+                        <p className="text-xs text-slate-400 mb-4 font-mono bg-slate-100 dark:bg-slate-700/50 px-2 py-1 rounded inline-block">
+                            ID: {user?.id}
+                        </p>
                         <div className="flex flex-wrap justify-center md:justify-start gap-3">
                             <Link href="/settings" className="btn bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
                                 <Settings size={18} />

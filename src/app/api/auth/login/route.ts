@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       httpOnly: true,
       secure: true, // Always secure in production/Vercel
       sameSite: "lax", // Required for modern browsers
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24 * 30, // 30 Days
       path: "/",
     });
 

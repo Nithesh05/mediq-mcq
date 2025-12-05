@@ -10,7 +10,7 @@ export async function GET() {
             FROM groups g
             JOIN users u ON g.host_id = u.id
             LEFT JOIN group_members gm ON g.id = gm.group_id
-            GROUP BY g.id
+            GROUP BY g.id, u.username
             ORDER BY g.created_at DESC
         `);
 
