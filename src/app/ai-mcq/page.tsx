@@ -48,31 +48,57 @@ function AIMCQContent() {
         }
     }, [user, loading, router]);
 
-    const [topic, setTopic] = useState("");
-    const [difficulty, setDifficulty] = useState("Medium");
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [quizReady, setQuizReady] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
-    // Quiz State
-    const [questions, setQuestions] = useState<AIQuestion[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [selectedOption, setSelectedOption] = useState<number | null>(null);
-    const [isAnswered, setIsAnswered] = useState(false);
-    const [score, setScore] = useState(0);
-    const [showResult, setShowResult] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(300); // 5 minutes for AI quiz
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
-    // Show loading while checking auth
-    if (loading) {
+    // ... existing code ...
+
+    return (
+        <PageTransition className="ai-container">
+            <div className="ai-header">
+                <div className="ai-icon-wrapper">
+                    {mounted && isDaily ? <Calendar size={32} className="text-purple" /> : <Sparkles size={32} className="text-purple" />}
+                </div>
+                <h1 className="text-slate-900 dark:text-white">
+                    {mounted && isDaily ? "Daily AI Challenge" : "AI MCQ Generator"}
+                </h1>
+                <p className="text-slate-600 dark:text-slate-300">
+                    {mounted ? (
+                        isDaily
+                            ? "Your daily dose of high-yield practice. Today's topic is auto-selected for you."
+                            : "Enter any medical topic, and our AI will instantly generate high-yield exam questions for you to practice."
+                    ) : (
+                        "Loading..."
+                    )}
+                </p>
+            </div>
+            const [difficulty, setDifficulty] = useState("Medium");
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [quizReady, setQuizReady] = useState(false);
+
+            // Quiz State
+            const [questions, setQuestions] = useState<AIQuestion[]>([]);
+            const [currentIndex, setCurrentIndex] = useState(0);
+            const [selectedOption, setSelectedOption] = useState<number | null>(null);
+            const [isAnswered, setIsAnswered] = useState(false);
+            const [score, setScore] = useState(0);
+            const [showResult, setShowResult] = useState(false);
+            const [timeLeft, setTimeLeft] = useState(300); // 5 minutes for AI quiz
+
+            // Show loading while checking auth
+            if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
             </div>
-        );
+            );
     }
 
-    // If no user (and not loading), don't render content (will redirect)
-    if (!user) {
+            // If no user (and not loading), don't render content (will redirect)
+            if (!user) {
         return null;
     }
 
@@ -89,14 +115,14 @@ function AIMCQContent() {
     const handleGenerate = async (selectedTopic = topic) => {
         if (!selectedTopic.trim()) return;
 
-        setIsGenerating(true);
-        setQuestions([]); // Clear previous questions
+            setIsGenerating(true);
+            setQuestions([]); // Clear previous questions
 
-        try {
+            try {
             const response = await fetch("/api/gemini", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ topic: selectedTopic, difficulty }),
+            headers: {"Content-Type": "application/json" },
+            body: JSON.stringify({topic: selectedTopic, difficulty }),
             });
 
             const data = await response.json();
@@ -114,10 +140,10 @@ function AIMCQContent() {
             setIsAnswered(false);
             setSelectedOption(null);
         } catch (error) {
-            console.error("Generation Error:", error);
+                console.error("Generation Error:", error);
             alert("Error: " + (error instanceof Error ? error.message : "Something went wrong"));
         } finally {
-            setIsGenerating(false);
+                setIsGenerating(false);
         }
     };
 
@@ -125,52 +151,52 @@ function AIMCQContent() {
     useEffect(() => {
         if (!quizReady || showResult) return;
         const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    setShowResult(true);
-                    return 0;
-                }
-                return prev - 1;
-            });
+                setTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        setShowResult(true);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
         }, 1000);
         return () => clearInterval(timer);
     }, [quizReady, showResult]);
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
     const handleOptionClick = (index: number) => {
         if (isAnswered) return;
-        setSelectedOption(index);
-        setIsAnswered(true);
-        if (index === questions[currentIndex].correctAnswer) {
-            setScore((prev) => prev + 1);
+            setSelectedOption(index);
+            setIsAnswered(true);
+            if (index === questions[currentIndex].correctAnswer) {
+                setScore((prev) => prev + 1);
         }
     };
 
     const handleNext = () => {
         if (currentIndex < questions.length - 1) {
-            setCurrentIndex((prev) => prev + 1);
+                setCurrentIndex((prev) => prev + 1);
             setSelectedOption(null);
             setIsAnswered(false);
         } else {
-            setShowResult(true);
+                setShowResult(true);
         }
     };
 
-    const { setStreak, setXP, setLevel } = useStreak();
-    const [showLevelUp, setShowLevelUp] = useState(false);
-    const [newLevel, setNewLevel] = useState(0);
+            const {setStreak, setXP, setLevel} = useStreak();
+            const [showLevelUp, setShowLevelUp] = useState(false);
+            const [newLevel, setNewLevel] = useState(0);
 
     const updateStats = async (xpEarned: number) => {
         // User is guaranteed to be logged in here due to the check above
         try {
             // Update Streak
-            const streakRes = await fetch("/api/streak/update", { method: "POST" });
+            const streakRes = await fetch("/api/streak/update", {method: "POST" });
             const streakData = await streakRes.json();
             if (streakData.updated) {
                 setStreak(streakData.streak);
@@ -179,21 +205,21 @@ function AIMCQContent() {
             // Update XP
             const xpRes = await fetch("/api/xp/update", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ amount: xpEarned })
+            headers: {"Content-Type": "application/json" },
+            body: JSON.stringify({amount: xpEarned })
             });
             const xpData = await xpRes.json();
             if (xpData.updated) {
                 setXP(xpData.xp);
-                if (xpData.leveledUp) {
-                    setLevel(xpData.level);
-                    setNewLevel(xpData.level);
-                    setShowLevelUp(true);
+            if (xpData.leveledUp) {
+                setLevel(xpData.level);
+            setNewLevel(xpData.level);
+            setShowLevelUp(true);
                 }
             }
 
         } catch (err) {
-            console.error("Failed to update stats", err);
+                console.error("Failed to update stats", err);
         }
     };
 
@@ -202,11 +228,11 @@ function AIMCQContent() {
             const percentage = Math.round((score / questions.length) * 100);
             const res = await fetch('/api/activity/log', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'quiz_completed',
-                    details: `${topic} Quiz (${difficulty})`,
-                    score: percentage
+            headers: {'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: 'quiz_completed',
+            details: `${topic} Quiz (${difficulty})`,
+            score: percentage
                 })
             });
             const data = await res.json();
@@ -215,7 +241,7 @@ function AIMCQContent() {
                 // console.log("Unlocked achievements:", data.newAchievements);
             }
         } catch (error) {
-            console.error("Failed to log activity", error);
+                console.error("Failed to log activity", error);
         }
     };
 
@@ -228,10 +254,10 @@ function AIMCQContent() {
         }
     }, [showResult]);
 
-    if (showResult) {
+            if (showResult) {
         const xpEarned = score * (isDaily ? 20 : 15);
-        const percentage = Math.round((score / questions.length) * 100);
-        return (
+            const percentage = Math.round((score / questions.length) * 100);
+            return (
             <div className="quiz-result-container">
                 <div className="quiz-result-card">
                     <div className="result-icon-wrapper bg-purple-50">
@@ -278,12 +304,12 @@ function AIMCQContent() {
                     </div>
                 </div>
             </div>
-        );
+            );
     }
 
-    if (quizReady) {
+            if (quizReady) {
         const currentQuestion = questions[currentIndex];
-        return (
+            return (
             <div className="quiz-container">
                 {/* Header */}
                 <div className="quiz-header">
@@ -405,149 +431,149 @@ function AIMCQContent() {
                     </div>
                 </div>
             </div>
-        );
+            );
     }
 
-    return (
-        <PageTransition className="ai-container">
-            <div className="ai-header">
-                <div className="ai-icon-wrapper">
-                    {isDaily ? <Calendar size={32} className="text-purple" /> : <Sparkles size={32} className="text-purple" />}
-                </div>
-                <h1 className="text-slate-900 dark:text-white">{isDaily ? "Daily AI Challenge" : "AI MCQ Generator"}</h1>
-                <p className="text-slate-600 dark:text-slate-300">
-                    {isDaily
-                        ? "Your daily dose of high-yield practice. Today's topic is auto-selected for you."
-                        : "Enter any medical topic, and our AI will instantly generate high-yield exam questions for you to practice."}
-                </p>
-            </div>
-
-            <div className="ai-input-card bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                {/* Decorative Blobs */}
-                <div className="blob blob-purple" />
-                <div className="blob blob-blue" />
-
-                {isDaily ? (
-                    <div className="text-center py-12">
-                        {isGenerating ? (
-                            <div className="flex flex-col items-center gap-4">
-                                <RefreshCw size={48} className="spin text-purple" />
-                                <h3 className="text-xl font-bold text-slate-800">Generating Your Daily Challenge...</h3>
-                                <p className="text-slate-500">Topic: <span className="font-bold text-purple">{topic}</span></p>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center gap-4">
-                                <Zap size={48} className="text-yellow-500" />
-                                <h3 className="text-xl font-bold text-slate-800 dark:text-white">Ready to Start?</h3>
-                                <p className="text-slate-500 dark:text-slate-400">Topic: <span className="font-bold text-purple">{topic}</span></p>
-                                <button
-                                    onClick={() => handleGenerate(topic)}
-                                    className="btn btn-primary px-8 py-3 rounded-xl font-bold"
-                                >
-                                    Start Challenge
-                                </button>
-                            </div>
-                        )}
+            return (
+            <PageTransition className="ai-container">
+                <div className="ai-header">
+                    <div className="ai-icon-wrapper">
+                        {isDaily ? <Calendar size={32} className="text-purple" /> : <Sparkles size={32} className="text-purple" />}
                     </div>
-                ) : (
-                    <div className="ai-form">
-                        <div className="form-group">
-                            <label className="text-slate-700 dark:text-slate-300">What do you want to practice?</label>
-                            <input
-                                type="text"
-                                value={topic}
-                                onChange={(e) => setTopic(e.target.value)}
-                                placeholder="e.g. Cranial Nerves, Diabetes, Malaria..."
-                                className="ai-input bg-white dark:bg-slate-700 text-slate-900 dark:text-white border-slate-200 dark:border-slate-600"
-                            />
-                        </div>
+                    <h1 className="text-slate-900 dark:text-white">{isDaily ? "Daily AI Challenge" : "AI MCQ Generator"}</h1>
+                    <p className="text-slate-600 dark:text-slate-300">
+                        {isDaily
+                            ? "Your daily dose of high-yield practice. Today's topic is auto-selected for you."
+                            : "Enter any medical topic, and our AI will instantly generate high-yield exam questions for you to practice."}
+                    </p>
+                </div>
 
-                        <div className="form-group">
-                            <label className="text-slate-700 dark:text-slate-300">Difficulty Level</label>
-                            <div className="difficulty-grid">
-                                {["Easy", "Medium", "Hard"].map((lvl) => (
-                                    <button
-                                        key={lvl}
-                                        onClick={() => setDifficulty(lvl)}
-                                        className={`difficulty-btn ${difficulty === lvl ? 'active' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
-                                    >
-                                        {lvl}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                <div className="ai-input-card bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                    {/* Decorative Blobs */}
+                    <div className="blob blob-purple" />
+                    <div className="blob blob-blue" />
 
-                        <button
-                            onClick={() => handleGenerate()}
-                            disabled={!topic.trim() || isGenerating}
-                            className={`generate-btn ${!topic.trim() || isGenerating ? 'disabled' : ''}`}
-                        >
+                    {isDaily ? (
+                        <div className="text-center py-12">
                             {isGenerating ? (
-                                <>
-                                    <RefreshCw size={24} className="spin" />
-                                    Generating Questions...
-                                </>
+                                <div className="flex flex-col items-center gap-4">
+                                    <RefreshCw size={48} className="spin text-purple" />
+                                    <h3 className="text-xl font-bold text-slate-800">Generating Your Daily Challenge...</h3>
+                                    <p className="text-slate-500">Topic: <span className="font-bold text-purple">{topic}</span></p>
+                                </div>
                             ) : (
-                                <>
-                                    <Zap size={24} fill="currentColor" />
-                                    Generate Quiz
-                                </>
+                                <div className="flex flex-col items-center gap-4">
+                                    <Zap size={48} className="text-yellow-500" />
+                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white">Ready to Start?</h3>
+                                    <p className="text-slate-500 dark:text-slate-400">Topic: <span className="font-bold text-purple">{topic}</span></p>
+                                    <button
+                                        onClick={() => handleGenerate(topic)}
+                                        className="btn btn-primary px-8 py-3 rounded-xl font-bold"
+                                    >
+                                        Start Challenge
+                                    </button>
+                                </div>
                             )}
-                        </button>
+                        </div>
+                    ) : (
+                        <div className="ai-form">
+                            <div className="form-group">
+                                <label className="text-slate-700 dark:text-slate-300">What do you want to practice?</label>
+                                <input
+                                    type="text"
+                                    value={topic}
+                                    onChange={(e) => setTopic(e.target.value)}
+                                    placeholder="e.g. Cranial Nerves, Diabetes, Malaria..."
+                                    className="ai-input bg-white dark:bg-slate-700 text-slate-900 dark:text-white border-slate-200 dark:border-slate-600"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="text-slate-700 dark:text-slate-300">Difficulty Level</label>
+                                <div className="difficulty-grid">
+                                    {["Easy", "Medium", "Hard"].map((lvl) => (
+                                        <button
+                                            key={lvl}
+                                            onClick={() => setDifficulty(lvl)}
+                                            className={`difficulty-btn ${difficulty === lvl ? 'active' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
+                                        >
+                                            {lvl}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => handleGenerate()}
+                                disabled={!topic.trim() || isGenerating}
+                                className={`generate-btn ${!topic.trim() || isGenerating ? 'disabled' : ''}`}
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <RefreshCw size={24} className="spin" />
+                                        Generating Questions...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Zap size={24} fill="currentColor" />
+                                        Generate Quiz
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {!isDaily && (
+                    <div className="ai-features">
+                        <div className="feature-card bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                            <div className="feature-icon-wrapper bg-blue-light text-blue">
+                                <Brain size={24} />
+                            </div>
+                            <h3 className="text-slate-900 dark:text-white">Smart Context</h3>
+                            <p className="text-slate-500 dark:text-slate-400">Questions adapted to your selected difficulty and topic.</p>
+                        </div>
+                        <div className="feature-card bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                            <div className="feature-icon-wrapper bg-green-light text-green">
+                                <CheckCircle size={24} />
+                            </div>
+                            <h3 className="text-slate-900 dark:text-white">Instant Feedback</h3>
+                            <p className="text-slate-500 dark:text-slate-400">Detailed explanations generated for every question.</p>
+                        </div>
+                        <div className="feature-card bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                            <div className="feature-icon-wrapper bg-orange-light text-orange">
+                                <Sparkles size={24} />
+                            </div>
+                            <h3 className="text-slate-900 dark:text-white">Unlimited Practice</h3>
+                            <p className="text-slate-500 dark:text-slate-400">Never run out of questions. Generate as many as you need.</p>
+                        </div>
                     </div>
                 )}
-            </div>
-
-            {!isDaily && (
-                <div className="ai-features">
-                    <div className="feature-card bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                        <div className="feature-icon-wrapper bg-blue-light text-blue">
-                            <Brain size={24} />
-                        </div>
-                        <h3 className="text-slate-900 dark:text-white">Smart Context</h3>
-                        <p className="text-slate-500 dark:text-slate-400">Questions adapted to your selected difficulty and topic.</p>
-                    </div>
-                    <div className="feature-card bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                        <div className="feature-icon-wrapper bg-green-light text-green">
-                            <CheckCircle size={24} />
-                        </div>
-                        <h3 className="text-slate-900 dark:text-white">Instant Feedback</h3>
-                        <p className="text-slate-500 dark:text-slate-400">Detailed explanations generated for every question.</p>
-                    </div>
-                    <div className="feature-card bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                        <div className="feature-icon-wrapper bg-orange-light text-orange">
-                            <Sparkles size={24} />
-                        </div>
-                        <h3 className="text-slate-900 dark:text-white">Unlimited Practice</h3>
-                        <p className="text-slate-500 dark:text-slate-400">Never run out of questions. Generate as many as you need.</p>
-                    </div>
-                </div>
-            )}
-            {showLevelUp && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white rounded-2xl p-8 text-center max-w-sm w-full shadow-2xl border-4 border-yellow-400"
-                    >
+                {showLevelUp && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                         <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            className="inline-block mb-4"
+                            initial={{ opacity: 0, scale: 0.5 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-white rounded-2xl p-8 text-center max-w-sm w-full shadow-2xl border-4 border-yellow-400"
                         >
-                            <Sparkles size={64} className="text-yellow-500" />
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                className="inline-block mb-4"
+                            >
+                                <Sparkles size={64} className="text-yellow-500" />
+                            </motion.div>
+                            <h2 className="text-3xl font-black text-slate-800 mb-2">LEVEL UP!</h2>
+                            <p className="text-slate-500 mb-6">You reached <span className="font-bold text-purple text-xl">Level {newLevel}</span></p>
+                            <button
+                                onClick={() => setShowLevelUp(false)}
+                                className="btn btn-primary w-full py-3 text-lg font-bold"
+                            >
+                                Awesome!
+                            </button>
                         </motion.div>
-                        <h2 className="text-3xl font-black text-slate-800 mb-2">LEVEL UP!</h2>
-                        <p className="text-slate-500 mb-6">You reached <span className="font-bold text-purple text-xl">Level {newLevel}</span></p>
-                        <button
-                            onClick={() => setShowLevelUp(false)}
-                            className="btn btn-primary w-full py-3 text-lg font-bold"
-                        >
-                            Awesome!
-                        </button>
-                    </motion.div>
-                </div>
-            )}
-        </PageTransition>
-    );
+                    </div>
+                )}
+            </PageTransition>
+            );
 }
